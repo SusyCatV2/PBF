@@ -24,7 +24,7 @@ local function items()
 	end
 end
 
-local function mints()
+local function mints() -- to be upgraded
 	local chunk = getChunk()
 
 	for _, bush in pairs(chunk:GetChildren()) do
@@ -49,7 +49,7 @@ local function deleteTrainers()
 	end
 end
 
-local function deletePokeSpawns()
+local function deletePokeSpawns() -- to be upgraded
 	local chunk = getChunk()
 
 	for _, Spawn in pairs(chunk:GetChildren()) do
@@ -59,7 +59,7 @@ local function deletePokeSpawns()
 	end
 end
 
-local function deleteObstacles()
+local function deleteObstacles() -- to be checked
 	local chunk = getChunk()
 
 	for _, obj in pairs(chunk:GetChildren()) do
@@ -67,6 +67,46 @@ local function deleteObstacles()
 			obj:Destroy()
 		end
 	end
+end
+
+local function waterWalk(value)
+	local chunk = getChunk()
+
+	for _, part in pairs(chunk:GetChildren()) do
+		if part.Name == "SurfWall" then
+			part.CanCollide = not value
+			part.CanQuery = not value
+			part.CanTouch = not value
+		end
+
+		if part.Name == "Water" then
+			part.CanCollide = value
+		end
+	end
+end
+
+local function joinLowest()
+	local Http = game:GetService("HttpService")
+	local TPS = game:GetService("TeleportService")
+	local Api = "https://games.roblox.com/v1/games/"
+
+	local _place = game.PlaceId
+	local _servers = Api.._place.."/servers/Public?sortOrder=Asc&limit=100"
+	
+	local function ListServers(cursor)
+  		local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
+  		return Http:JSONDecode(Raw)
+	end
+
+	local Server, Next
+	
+	repeat
+  		local Servers = ListServers(Next)
+  		Server = Servers.data[1]
+  		Next = Servers.nextPageCursor
+	until Server
+
+	TPS:TeleportToPlaceInstance(_place,Server.id,game.Players.LocalPlayer)
 end
 
 -- AUTO-CATCH
@@ -144,7 +184,7 @@ local function interface()
 	})
 
 	local Main = Window:CreateTab("Main")
-	local Toggle = Main:CreateToggle({
+	local Encounter = Main:CreateToggle({
    		Name = "Auto Encounter",
    		CurrentValue = false,
   		Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
@@ -163,6 +203,14 @@ local function interface()
    		Flag = "Slider1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
    		Callback = function(Value)
 			character.Humanoid.WalkSpeed = Value
+   		end,
+	})
+	local WaterWalk = Player:CreateToggle({
+   		Name = "Water Walk",
+   		CurrentValue = false,
+  		Flag = "Toggle2", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   		Callback = function(Value)
+			waterWalk(Value)
    		end,
 	})
 
@@ -197,5 +245,13 @@ local function interface()
 			deleteObstacles()
    		end,
 	})
+
+	local Server = Window:CreateTab("Server", "globe")
+	local Lowest = Other:CreateButton({
+   		Name = "Join almost empty server",
+   		Callback = function()
+			joinLowest()
+   		end,
+	}) 
 end
 interface()
